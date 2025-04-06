@@ -64,7 +64,10 @@ export default function Layout(props) {
         }}
       >
         <div className="d-flex flex-column min-vh-100">
-          <Header onChangeLanguage={props.onChangeLanguage} />
+          <Header
+            onChangeLanguage={props.onChangeLanguage}
+            currentLocale={props.currentLocale}
+          />
           <Theme theme="white">
             <Content>{children}</Content>
           </Theme>

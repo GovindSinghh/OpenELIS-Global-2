@@ -575,10 +575,11 @@ function OEHeader(props) {
                           onChange={(event) => {
                             props.onChangeLanguage(event.target.value);
                           }}
-                          value={props.intl.locale}
+                          value={props.currentLocale}
                         >
                           <SelectItem text="English" value="en" />
                           <SelectItem text="French" value="fr" />
+                          <SelectItem text="Spanish" value="es" />
                         </Select>
                       </li>
                       <li className="userDetails">

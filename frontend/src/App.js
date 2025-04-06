@@ -11,8 +11,6 @@ import ResultSearch from "./components/resultPage/ResultSearch";
 import UserSessionDetailsContext from "./UserSessionDetailsContext";
 import { getFromOpenElisServer } from "./components/utils/Utils";
 import "./App.css";
-import messages_en from "./languages/en.json";
-import messages_fr from "./languages/fr.json";
 import config from "./config.json";
 import { SecureRoute } from "./components/security";
 import "./index.scss";
@@ -45,22 +43,49 @@ import AuditTrailReportIndex from "./components/reports/auditTrailReport/Index.j
 import ReferredOutTests from "./components/resultPage/resultsReferredOut/ReferredOutTests.js";
 import ChangePassword from "./components/ChangePassword.js";
 import { Roles } from "./components/utils/Utils";
+const languageMap = {
+  en: () => import("./locales/en.json"),
+  fr: () => import("./locales/fr.json"),
+  es: () => import("./locales/es.json"),
+};
 
 export default function App() {
   let i18nConfig = {
     locale: navigator.language.split(/[-_]/)[0],
     defaultLocale: "en",
-    messages: messages_en,
+    messages: {},
   };
 
   const [userSessionDetails, setUserSessionDetails] = useState({});
   const [errorLoadingSessionDetails, setErrorLoadingSessionDetails] =
     useState(false);
-  const [locale, setLocale] = useState("en");
+  const [locale, setLocale] = useState(
+    () => localStorage.getItem("locale") || "en",
+  );
+  const [messages, setMessages] = useState({});
 
   useEffect(() => {
     getUserSessionDetails();
+    loadLanguage(locale);
   }, []);
+
+  const loadLanguage = async (lang) => {
+    const languageLoader = languageMap[lang] || languageMap["en"];
+    try {
+      const messagesModule = await languageLoader();
+      setMessages(messagesModule.default);
+      i18nConfig.messages = messagesModule.default;
+      i18nConfig.locale = lang;
+      setLocale(lang);
+    } catch (error) {
+      console.error(`Error loading language ${lang}:`, error);
+      const fallbackMessages = await languageMap["en"]();
+      setMessages(fallbackMessages.default);
+      i18nConfig.messages = fallbackMessages.default;
+      i18nConfig.locale = "en";
+      setLocale("en");
+    }
+  };
 
   const getUserSessionDetails = async () => {
     let counter = 0;
@@ -117,20 +142,6 @@ export default function App() {
     return userSessionDetails;
   };
 
-  i18nConfig.locale =
-    localStorage.getItem("locale") || navigator.language.split(/[-_]/)[0];
-  switch (i18nConfig.locale) {
-    case "en":
-      i18nConfig.messages = messages_en;
-      break;
-    case "fr":
-      i18nConfig.messages = messages_fr;
-      break;
-    default:
-      i18nConfig.messages = messages_en;
-      break;
-  }
-
   const logout = () => {
     if (userSessionDetails.loginMethod === "SAML") {
       fetch(config.serverBaseUrl + "/Logout?useSAML=true", {
@@ -182,21 +193,8 @@ export default function App() {
   };
 
   const changeLanguageReact = (lang) => {
-    switch (lang) {
-      case "en":
-        i18nConfig.messages = messages_en;
-        break;
-      case "fr":
-        i18nConfig.messages = messages_fr;
-        break;
-      default:
-        i18nConfig.messages = messages_en;
-        break;
-    }
-    i18nConfig.locale = lang;
+    loadLanguage(lang);
     localStorage.setItem("locale", lang);
-    //rerender the component on changing locale
-    setLocale(lang);
   };
 
   const changeLanguageBackend = async (lang) => {
@@ -228,7 +226,7 @@ export default function App() {
       locale={i18nConfig.locale}
       key={i18nConfig.locale}
       defaultLocale={i18nConfig.defaultLocale}
-      messages={i18nConfig.messages}
+      messages={messages}
     >
       <UserSessionDetailsContext.Provider
         value={{
@@ -241,7 +239,7 @@ export default function App() {
       >
         <>
           <Router>
-            <Layout onChangeLanguage={onChangeLanguage}>
+            <Layout onChangeLanguage={onChangeLanguage} currentLocale={locale}>
               <Switch>
                 <Route path="/login" exact component={() => <Login />} />
                 <Route

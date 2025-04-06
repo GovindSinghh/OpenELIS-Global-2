@@ -16,6 +16,9 @@ liqubase.properties
 .project
 .factorypath
 
+#transifex token
+.env
+
 # Maven Files #
 *target/
 
